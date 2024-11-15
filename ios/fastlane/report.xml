@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="fastlane.lanes">
+    
+    
+    
+      
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000279">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="1: fx_set_build_settings" time="0.047692">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="2: Switch to ios build_dev lane" time="0.000171">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="3: Switch to ios ipa_build lane" time="9.8e-05">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="4: gym" time="76.458566">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="5: Switch to ios upload_pgy lane" time="0.000122">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="6: fx_upload_pgy" time="3.683702">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="7: Switch to ios last_git_commit_info lane" time="0.000533">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="8: Switch to ios send_success_wecom lane" time="0.000112">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="9: fx_teams" time="1.634108">
+        
+      </testcase>
+    
+  </testsuite>
+</testsuites>

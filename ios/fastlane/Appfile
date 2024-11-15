@@ -1,0 +1,8 @@
+# For more information about the Appfile, see:
+#     https://docs.fastlane.tools/advanced/#appfile
+
+app_identifier("com.fortex.mobile.app")
+
+apple_id("chimi@fortex.com")
+
+team_id "54ZQS9KUM6"

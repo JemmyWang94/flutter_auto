@@ -1,0 +1,401 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#  fastlane dev_build_upload content:"更新备注" desc:"蒲公英的更新备注"
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+###################################
+
+# 命令行调用 lane : fastlane example_lane key1:value1 key2:value2
+# 通过 import "路径/other_fastfile" 导入本地其他fastfile文件, 可调用其中的 lane
+# 但需要注意的是 如果两个 fastfile 都引入了同一个 fastfile 文件, 会出现重复定义的警告
+
+# 一些调用 lane 需要用到的参数的正确写法:
+# 项目构建环境 config : Debug Test Release Ad_hoc
+# 导出包的方式 method : app-store, validation, ad-hoc, package, enterprise, development, developer-id, mac-application
+
+# ruby 编码规范: http://stylesror.github.io/
+
+# 全局参数
+SCHEME_NAME  = "Runner"
+IPA_NAME     = "Runner"  # 包名
+IPA_ROOT_DIR = ENV['TCOUTPUT_DIR'] # 构建的ipa输出路径
+
+WECOM_IOS_GROUP = "https://fortexinc.webhook.office.com/webhookb2/437b0063-763d-49fb-be6f-832d792b2d88@107f5168-dae8-4735-8b95-b5f7f81a1df6/IncomingWebhook/739bd2037617492fa386ad031dc918e6/ebf5569a-e8b5-4e2f-9f07-13294db238a2/V2RG2j9Lp39h4CJOqptrpjb47ntANIz7HPLRJXoOOFlx81"
+
+
+default_platform(:ios)
+
+platform :ios do
+
+  lane :dev_clean_workspace do |options|
+    fx_git_clean_workspace()
+  end
+
+  lane :send_msg do |options|
+    content = options[:content]
+    desc    = options[:desc]
+
+    send_wecom_msg(content: content,
+                       webhook: WECOM_IOS_GROUP,
+                       call_all: true)
+  end
+  
+  # 一键打包上传dev环境的ipa 没有清空和更新pod操作
+  # - content 消息群的更新内容
+  # - desc 蒲公英的更新信息
+  lane :dev_build_upload_withoutpod do |options|
+    content = options[:content]
+    desc    = options[:desc]
+
+    fx_set_build_settings(project_name: SCHEME_NAME,
+                           settings_key: "FLUTTER_BUILD_MODE",
+                           settings_value: "release",
+                           config: "Debug")
+
+    ipa_file = build_dev()
+
+    result = upload_pgy(ipa_file: ipa_file, msg: content)
+
+    buildVersion      = result[:buildVersion]
+    buildBuildVersion = result[:buildBuildVersion]
+    buildQRCodeURL    = result[:buildQRCodeURL]
+    buildShortcutUrl  = result[:buildShortcutUrl]
+
+    msg = "#{content}\n二维码链接: #{buildQRCodeURL}"
+
+    data = last_git_commit_info()
+
+    msg = "****** #{SCHEME_NAME} dev 打包成功 ******\n
+    \n构建结果: 成功\n
+    \n构建分支: #{data[:branch]}\n
+    \n记录SHA: #{data[:sha]}\n
+    \n提交作者: #{data[:author]}\n
+    \n下载链接: #{buildShortcutUrl}\n
+    \n记录更新: #{data[:remark]}\n
+    \n更新说明: #{content}\n
+    \n二维码链接: #{buildQRCodeURL}\n"
+
+    send_success_wecom(content: msg,
+                       webhook: WECOM_IOS_GROUP,
+                       call_all: true)
+  end
+
+  # 一键打包上传dev环境的ipa
+  # - content 消息群的更新内容
+  # - desc 蒲公英的更新信息
+  lane :dev_build_upload do |options|
+
+    content = options[:content]
+    desc    = options[:desc]
+
+    fx_git_clean_workspace()
+
+    pod_update()
+
+    fx_set_build_settings(project_name: SCHEME_NAME,
+                           settings_key: "FLUTTER_BUILD_MODE",
+                           settings_value: "release",
+                           config: "Debug")
+
+    ipa_file = build_dev()
+
+    result = upload_pgy(ipa_file: ipa_file, msg: content)
+
+    buildVersion      = result[:buildVersion]
+    buildBuildVersion = result[:buildBuildVersion]
+    buildQRCodeURL    = result[:buildQRCodeURL]
+    buildShortcutUrl  = result[:buildShortcutUrl]
+
+    msg = "#{content}\n二维码链接: #{buildQRCodeURL}"
+
+    data = last_git_commit_info()
+
+    msg = "****** #{SCHEME_NAME} dev 打包成功 ******
+    构建结果: 成功
+    构建分支: #{data[:branch]}
+    记录SHA: #{data[:sha]}
+    提交作者: #{data[:author]}
+    下载链接: #{buildShortcutUrl}
+    记录更新: #{data[:remark]}
+    更新说明: #{content}
+    二维码链接: #{buildQRCodeURL}"
+
+    send_success_wecom(content: msg,
+                       webhook: WECOM_IOS_GROUP,
+                       call_all: true)
+                       
+    fx_git_clean_workspace()
+
+  end
+  
+  ############## pod, git 相关操作 ##############
+  
+  # 更新 pod
+  lane :pod_update do |options|
+    UI.message("pod_update 当前路径: #{Dir.pwd}")
+    Dir.chdir("..") do
+      UI.message("pod_update 切换路径: #{Dir.pwd}")
+      system("pod install")
+    end
+    UI.message("pod_update 执行后恢复路径: #{Dir.pwd}")
+  end
+  
+  # 切换本地分支 不传值, 默认切换为主分支
+  # - branch: 分支名称
+  lane :git_checkout_branch do |options|
+    branch = options[:branch]
+    if branch.nil? || branch.empty?
+      branch = 'master'
+    end
+    exec("git checkout #{branch}")
+  end
+  
+  # 调用脚本清空本地工作区和缓存区
+  lane :git_clean_workspace do |options|
+    Dir.chdir("../")
+    exec("sh git_clean_workspace.sh")
+  end
+  
+  # 获取当前分支最新一次提交记录信息
+  lane :last_git_commit_info do |options|
+    # 获取git分支最后一次提交记录信息 %h 精简sha值, %an 作者名, %ad 作者修订时间, %cn 提交者名, %cd 提交日期, %s 提交说明
+    puts `git log --pretty=format:"sha:%h\nauthor:%an\nauthor_mail:%ae\nauthor_date:%ad\ncommitter:%cn\ncommitter_mail:%ce\ncommit_date:%cd\nremark:%s" -1>git_log_msg.txt`
+
+    puts `git rev-parse --abbrev-ref HEAD>git_branch_msg.txt`
+
+    git_branch_name = File.read("git_branch_msg.txt").sub("\n", "")
+
+    # 获取git log 输出内容, 并删除输出的txt
+    sha         = ""
+    author      = ""
+    author_mail = ""
+    committer   = ""
+    commit_mail = ""
+    commit_date = ""
+    remark      = ""
+
+    git_log_file = File.open('git_log_msg.txt')
+    git_log_file.each_line {|line|
+
+      if line.include? "sha:"
+        puts "sha值: #{line.sub("sha:", "")}"
+        sha = line.sub("sha:", "").sub("\n", "")
+      elsif line.include? "author:"
+        puts "作者: #{line.sub("author:", "")}"
+        author = line.sub("author:", "").sub("\n", "")
+      elsif line.include? "author_mail:"
+        puts "作者邮箱: #{line.sub("author_mail:", "")}"
+        author_mail = line.sub("author_mail:", "").sub("\n", "")
+      elsif line.include? "author_date:"
+        puts "作者修订时间: #{line.sub("author_date:", "")}"
+      elsif line.include? "committer:"
+        puts "提交者: #{line.sub("committer:", "")}"
+        committer = line.sub("committer:", "").sub("\n", "")
+      elsif line.include? "committer_mail:"
+        puts "提交者邮箱: #{line.sub("committer_mail:", "")}"
+        commit_mail = line.sub("committer_mail:", "").sub("\n", "")
+      elsif line.include? "committer_date:"
+        puts "提交时间: #{line.sub("commit_date:", "")}"
+        commit_date = line.sub("commit_date:", "").sub("\n", "")
+      elsif line.include? "remark:"
+        puts "备注: #{line.sub("remark:", "")}"
+        remark = line.sub("remark:", "").sub("\n", "")
+      else
+        puts "其他内容: #{line}"
+      end
+    }
+    File::delete("#{Dir::pwd}/git_log_msg.txt")
+    File::delete("#{Dir::pwd}/git_branch_msg.txt")
+
+    {"branch": git_branch_name, "sha": sha, "author": author, "author_mail": author_mail, "committer": committer, "commit_mail": commit_mail, "commit_date": commit_date, "remark": remark}
+
+  end
+  
+  ############## 构建, 打包 (暂时仅支持dev打包) ##############
+
+  # 开发环境构建打包上传到蒲公英
+  # - desc: stirng 蒲公英更新说明
+  # - content: string 消息内容
+  lane :dev_build_pgy do |options|
+    ipa_file = build_dev()
+
+    content = options[:content]
+    desc    = options[:desc]
+
+    result = upload_pgy(ipa_file: ipa_file, msg: desc)
+
+    buildVersion      = result[:buildVersion]
+    buildBuildVersion = result[:buildBuildVersion]
+    buildQRCodeURL    = result[:buildQRCodeURL]
+    buildShortcutUrl  = result[:buildShortcutUrl]
+
+    msg = "#{content}\n二维码链接: #{buildQRCodeURL}"
+    
+    send_success_wecom(content: msg,
+                       webhook: WECOM_IOS_GROUP,
+                       call_all: true)
+  end
+  
+  # 构建开发环境的ipa
+  lane :build_dev do
+    ipa_path = "#{IPA_ROOT_DIR}/development"
+    ipa_file = ipa_build(scheme: SCHEME_NAME,
+             config: "Debug",
+             ipa_name: IPA_NAME,
+             bitcode: false,
+             path: ipa_path)
+    ipa_file
+  end
+  
+  # 构建打包
+  # - scheme: sring 构建选择的 scheme
+  # - config: sring 构建环境 固定为 Debug Test Ad_hoc Release
+  # - ipa_name: string ipa包名
+  # - bitcode: Boolean 是否启用 bitcode
+  # - path: string ipa包存放路径
+  lane :ipa_build do |options|
+    config   = options[:config]
+    ipa_name = options[:ipa_name]
+    method   = ""
+
+    # 配置不同项目环境的包名和构建方式
+    if config.eql?("Debug")
+      method   = "development"
+      ipa_name = "#{options[:ipa_name]}_dev.ipa"
+    elsif config.eql?("Test")
+      method   = "development"
+      ipa_name = "#{options[:ipa_name]}_test.ipa"
+    elsif config.eql?("Ad_hoc")
+      method   = "ad-hoc"
+      ipa_name = "#{options[:ipa_name]}_adhoc.ipa"
+    elsif config.eql?("Release")
+      method   = "app-store"
+      ipa_name = "#{options[:ipa_name]}_release.ipa"
+    else
+      UI.user_error!("选择的构建环境当前不支持, 当前仅支持: Debug Test Ad_hoc Release 以上环境构建!")
+    end
+
+    bitcode  = options[:bitcode]
+    ipa_path = options[:path]
+
+    ipa_file = "#{ipa_path}/#{ipa_name}"
+
+    UI.message("👨‍🍳 开始构建打包...")
+    gym(workspace: ENV['TCWORKSPACE'],
+        scheme: options[:scheme],
+        configuration: config,
+        export_method: method,
+        output_directory: ipa_path,
+        output_name: ipa_name,
+        include_symbols: true,
+        include_bitcode: bitcode,
+        clean: true)
+
+    ipa_file
+  end
+  
+  ############## 上传到第三方分发平台 ##############
+
+  # 上传到蒲公英
+  # - ipa_file: string ipa文件路径
+  # - msg: string 发版内容
+  lane :upload_pgy do |options|
+    UI.message("------ 上传蒲公英 start ------")
+    upload_msg = options[:msg]
+    ipa_file   = options[:ipa_file]
+    # 插件上传不能获取二维码地址
+    # pgyer(api_key: ENV['PGY_API_KEY'],
+    #       user_key: ENV['PGY_USER_KEY'],
+    #       update_description: upload_msg)
+    data = fx_upload_pgy(api_key: ENV['PGY_API_KEY'], file: ipa_file, desc: upload_msg)
+
+    UI.success("------ 上传蒲公英 success ------")
+    data
+  end
+  
+  ############## 发送消息 lane ##############
+
+  # 发送消息
+  # - content: string 消息内容
+  # - webhook: string 群消息机器人的链接
+  # - call_list: array(string) 需要@的人手机号数组
+  lane :send_wecom_msg do |options|
+    UI.success "🤟🤟🤟 发送消息"
+    content   = options[:content]
+    UI.success "🤟🤟🤟 content ----- #{content}"
+    webhook   = options[:webhook]
+    call_list = options[:call_list]
+
+    url  = webhook
+    fx_teams(msgtype: "text",
+              content: content,
+              webhook: url)
+  end
+
+  # 发送执行成功的消息
+  #  content: string 消息内容
+  #  webhook: string 群消息机器人的链接
+  #  call_all: boolean 是否@所有人
+  lane :send_success_wecom do |options|
+    UI.success "🤟🤟🤟 lane 成功执行, 将发送消息"
+    content  = options[:content]
+    webhook  = options[:webhook]
+    call_all = options[:call_all]
+
+    text = "🎉🎉🎉 lane 执行结束 🎉🎉🎉\n#{content}"
+    url  = webhook
+    fx_teams(msgtype: "text",
+              content: text,
+              webhook: url)
+  end
+  
+  ############## 处理 lane 执行的 lane ##############
+
+  # 每个 lane 调用前会执行, 但内部调用的 lane 不会触发
+  # - lane 传入的lane名
+  # - options 带的参数
+  before_all do |lane, options|
+    UI.message("👨‍🍳 将执行lane: #{lane}")
+    UI.message("👨‍🍳 #{lane} 的参数为 #{options}")
+
+    ENV["MATCH_PASSWORD"] = "123"
+    # 配置超时时间和重试次数
+    ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "120"
+    ENV["FASTLANE_XCODEBUILD_SETTINGS_RETRIES"] = "5"
+  end
+
+  # lane 执行成功之后会执行, 但内部调用 lane 不会触发
+  # - lane 为调用的lane名
+  # - options 带的参数
+  after_all do |lane, options|
+
+    # TODO: 可以用字符串的方式来判断是否为特定的 lane
+    # if "#{lane}".eql?("指定的lane名")
+    # else
+    # end
+
+    UI.success("🤟 lane: #{lane} 成功执行")
+  end
+
+  # lane 执行失败会进入到 error lane, 这里暂时只发送失败消息到消息群
+  error do |lane, options|
+    UI.error("❌❌❌ lane 执行出错, 将发送错误信息到消息群!!!")
+    UI.error("👉👉👉 报错的lane: #{lane}")
+    UI.error("👮👮👮 错误原因: #{options}")
+    text = "💢💢💢 lane 执行失败 💢💢💢\n👉 报错的lane: #{lane}\n👉 错误信息: #{options}"
+    fx_teams(msgtype: "text",
+              content: text,
+              webhook: WECOM_IOS_GROUP)
+  end
+  
+end
