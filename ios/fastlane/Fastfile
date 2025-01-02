@@ -71,19 +71,19 @@ platform :ios do
     buildQRCodeURL    = result[:buildQRCodeURL]
     buildShortcutUrl  = result[:buildShortcutUrl]
 
-    msg = "#{content}\n二维码链接: #{buildQRCodeURL}"
+    msg = "#{content}\nQR code link: #{buildQRCodeURL}"
 
     data = last_git_commit_info()
 
-    msg = "****** #{SCHEME_NAME} dev 打包成功 ******\n
-    \n构建结果: 成功\n
-    \n构建分支: #{data[:branch]}\n
-    \n记录SHA: #{data[:sha]}\n
-    \n提交作者: #{data[:author]}\n
-    \n下载链接: #{buildShortcutUrl}\n
-    \n记录更新: #{data[:remark]}\n
-    \n更新说明: #{content}\n
-    \n二维码链接: #{buildQRCodeURL}\n"
+    msg = "****** #{SCHEME_NAME} dev Packaging success ******\n
+    \nBuild result: Success\n
+    \nBuild branch: #{data[:branch]}\n
+    \nRecord SHA: #{data[:sha]}\n
+    \nSubmit Author: #{data[:author]}\n
+    \nDownload Link: #{buildShortcutUrl}\n
+    \nRecord Updates: #{data[:remark]}\n
+    \nUpdate Notes: #{content}\n
+    \nQR code link: #{buildQRCodeURL}\n"
 
     send_success_wecom(content: msg,
                        webhook: WECOM_IOS_GROUP,
@@ -116,19 +116,19 @@ platform :ios do
     buildQRCodeURL    = result[:buildQRCodeURL]
     buildShortcutUrl  = result[:buildShortcutUrl]
 
-    msg = "#{content}\n二维码链接: #{buildQRCodeURL}"
+    msg = "#{content}\nQR code link: #{buildQRCodeURL}"
 
     data = last_git_commit_info()
 
-    msg = "****** #{SCHEME_NAME} dev 打包成功 ******
-    构建结果: 成功
-    构建分支: #{data[:branch]}
-    记录SHA: #{data[:sha]}
-    提交作者: #{data[:author]}
-    下载链接: #{buildShortcutUrl}
-    记录更新: #{data[:remark]}
-    更新说明: #{content}
-    二维码链接: #{buildQRCodeURL}"
+    msg = "****** #{SCHEME_NAME} dev packaging success ******
+    Build result: Success
+    Build branch: #{data[:branch]}
+    Record SHA: #{data[:sha]}
+    Submit Author: #{data[:author]}
+    Download Link: #{buildShortcutUrl}
+    Record Updates: #{data[:remark]}
+    Update Notes: #{content}
+    QR code link: #{buildQRCodeURL}"
 
     send_success_wecom(content: msg,
                        webhook: WECOM_IOS_GROUP,
@@ -142,12 +142,12 @@ platform :ios do
   
   # 更新 pod
   lane :pod_update do |options|
-    UI.message("pod_update 当前路径: #{Dir.pwd}")
+    UI.message("pod_update current dir: #{Dir.pwd}")
     Dir.chdir("..") do
-      UI.message("pod_update 切换路径: #{Dir.pwd}")
+      UI.message("pod_update change dir: #{Dir.pwd}")
       system("pod install")
     end
-    UI.message("pod_update 执行后恢复路径: #{Dir.pwd}")
+    UI.message("Restore path after pod_update execution: #{Dir.pwd}")
   end
   
   # 切换本地分支 不传值, 默认切换为主分支
@@ -188,30 +188,30 @@ platform :ios do
     git_log_file.each_line {|line|
 
       if line.include? "sha:"
-        puts "sha值: #{line.sub("sha:", "")}"
+        puts "Sha: #{line.sub("sha:", "")}"
         sha = line.sub("sha:", "").sub("\n", "")
       elsif line.include? "author:"
-        puts "作者: #{line.sub("author:", "")}"
+        puts "Author: #{line.sub("author:", "")}"
         author = line.sub("author:", "").sub("\n", "")
       elsif line.include? "author_mail:"
-        puts "作者邮箱: #{line.sub("author_mail:", "")}"
+        puts "Email: #{line.sub("author_mail:", "")}"
         author_mail = line.sub("author_mail:", "").sub("\n", "")
       elsif line.include? "author_date:"
-        puts "作者修订时间: #{line.sub("author_date:", "")}"
+        puts "Revision Time: #{line.sub("author_date:", "")}"
       elsif line.include? "committer:"
-        puts "提交者: #{line.sub("committer:", "")}"
+        puts "Submitted by: #{line.sub("committer:", "")}"
         committer = line.sub("committer:", "").sub("\n", "")
       elsif line.include? "committer_mail:"
-        puts "提交者邮箱: #{line.sub("committer_mail:", "")}"
+        puts "Submitted Email: #{line.sub("committer_mail:", "")}"
         commit_mail = line.sub("committer_mail:", "").sub("\n", "")
       elsif line.include? "committer_date:"
-        puts "提交时间: #{line.sub("commit_date:", "")}"
+        puts "Submitted Time: #{line.sub("commit_date:", "")}"
         commit_date = line.sub("commit_date:", "").sub("\n", "")
       elsif line.include? "remark:"
-        puts "备注: #{line.sub("remark:", "")}"
+        puts "Remark: #{line.sub("remark:", "")}"
         remark = line.sub("remark:", "").sub("\n", "")
       else
-        puts "其他内容: #{line}"
+        puts "Other: #{line}"
       end
     }
     File::delete("#{Dir::pwd}/git_log_msg.txt")
@@ -224,7 +224,7 @@ platform :ios do
   ############## 构建, 打包 (暂时仅支持dev打包) ##############
 
   # 开发环境构建打包上传到蒲公英
-  # - desc: stirng 蒲公英更新说明
+  # - desc: stirng 蒲公英Update Notes
   # - content: string 消息内容
   lane :dev_build_pgy do |options|
     ipa_file = build_dev()
@@ -239,7 +239,7 @@ platform :ios do
     buildQRCodeURL    = result[:buildQRCodeURL]
     buildShortcutUrl  = result[:buildShortcutUrl]
 
-    msg = "#{content}\n二维码链接: #{buildQRCodeURL}"
+    msg = "#{content}\nQR code link: #{buildQRCodeURL}"
     
     send_success_wecom(content: msg,
                        webhook: WECOM_IOS_GROUP,
@@ -282,7 +282,7 @@ platform :ios do
       method   = "app-store"
       ipa_name = "#{options[:ipa_name]}_release.ipa"
     else
-      UI.user_error!("选择的构建环境当前不支持, 当前仅支持: Debug Test Ad_hoc Release 以上环境构建!")
+      UI.user_error!("The selected build environment is not currently supported. Currently only supports: Debug Test Ad_hoc Release and above environment builds!")
     end
 
     bitcode  = options[:bitcode]
@@ -290,7 +290,7 @@ platform :ios do
 
     ipa_file = "#{ipa_path}/#{ipa_name}"
 
-    UI.message("👨‍🍳 开始构建打包...")
+    UI.message("👨‍🍳 Start building and packaging...")
     gym(workspace: ENV['TCWORKSPACE'],
         scheme: options[:scheme],
         configuration: config,
@@ -310,7 +310,7 @@ platform :ios do
   # - ipa_file: string ipa文件路径
   # - msg: string 发版内容
   lane :upload_pgy do |options|
-    UI.message("------ 上传蒲公英 start ------")
+    UI.message("------ upload pgy start ------")
     upload_msg = options[:msg]
     ipa_file   = options[:ipa_file]
     # 插件上传不能获取二维码地址
@@ -319,7 +319,7 @@ platform :ios do
     #       update_description: upload_msg)
     data = fx_upload_pgy(api_key: ENV['PGY_API_KEY'], file: ipa_file, desc: upload_msg)
 
-    UI.success("------ 上传蒲公英 success ------")
+    UI.success("------ upload pgy success ------")
     data
   end
   
@@ -330,7 +330,7 @@ platform :ios do
   # - webhook: string 群消息机器人的链接
   # - call_list: array(string) 需要@的人手机号数组
   lane :send_wecom_msg do |options|
-    UI.success "🤟🤟🤟 发送消息"
+    UI.success "🤟🤟🤟 Send message:"
     content   = options[:content]
     UI.success "🤟🤟🤟 content ----- #{content}"
     webhook   = options[:webhook]
@@ -347,12 +347,12 @@ platform :ios do
   #  webhook: string 群消息机器人的链接
   #  call_all: boolean 是否@所有人
   lane :send_success_wecom do |options|
-    UI.success "🤟🤟🤟 lane 成功执行, 将发送消息"
+    UI.success "🤟🤟🤟 Lane is successfully executed and a message will be sent"
     content  = options[:content]
     webhook  = options[:webhook]
     call_all = options[:call_all]
 
-    text = "🎉🎉🎉 lane 执行结束 🎉🎉🎉\n#{content}"
+    text = "🎉🎉🎉 lane execute done 🎉🎉🎉\n#{content}"
     url  = webhook
     fx_teams(msgtype: "text",
               content: text,
@@ -365,8 +365,8 @@ platform :ios do
   # - lane 传入的lane名
   # - options 带的参数
   before_all do |lane, options|
-    UI.message("👨‍🍳 将执行lane: #{lane}")
-    UI.message("👨‍🍳 #{lane} 的参数为 #{options}")
+    UI.message("👨‍🍳 Will execute lane: #{lane}")
+    UI.message("👨‍🍳 #{lane} params is #{options}")
 
     ENV["MATCH_PASSWORD"] = "123"
     # 配置超时时间和重试次数
@@ -384,15 +384,15 @@ platform :ios do
     # else
     # end
 
-    UI.success("🤟 lane: #{lane} 成功执行")
+    UI.success("🤟 lane: #{lane} execute success")
   end
 
   # lane 执行失败会进入到 error lane, 这里暂时只发送失败消息到消息群
   error do |lane, options|
-    UI.error("❌❌❌ lane 执行出错, 将发送错误信息到消息群!!!")
-    UI.error("👉👉👉 报错的lane: #{lane}")
-    UI.error("👮👮👮 错误原因: #{options}")
-    text = "💢💢💢 lane 执行失败 💢💢💢\n👉 报错的lane: #{lane}\n👉 错误信息: #{options}"
+    UI.error("❌❌❌ Lane execution error, error information will be sent to the message group!!!")
+    UI.error("👉👉👉 The failed lane: #{lane}")
+    UI.error("👮👮👮 Reason for the error: #{options}")
+    text = "💢💢💢 Lane execution failed 💢💢💢\n👉 Failed lane: #{lane}\n👉 Error details: #{options}"
     fx_teams(msgtype: "text",
               content: text,
               webhook: WECOM_IOS_GROUP)
