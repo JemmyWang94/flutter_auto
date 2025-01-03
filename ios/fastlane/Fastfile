@@ -352,7 +352,7 @@ platform :ios do
     webhook  = options[:webhook]
     call_all = options[:call_all]
 
-    text = "🎉🎉🎉 lane execute done 🎉🎉🎉\n#{content}"
+    text = "--------- lane execute done ---------\n#{content}"
     url  = webhook
     fx_teams(msgtype: "text",
               content: text,
@@ -392,7 +392,7 @@ platform :ios do
     UI.error("❌❌❌ Lane execution error, error information will be sent to the message group!!!")
     UI.error("👉👉👉 The failed lane: #{lane}")
     UI.error("👮👮👮 Reason for the error: #{options}")
-    text = "💢💢💢 Lane execution failed 💢💢💢\n👉 Failed lane: #{lane}\n👉 Error details: #{options}"
+    text = "--------- Lane execution failed ---------\n --->>> Failed lane: #{lane}\n --->>> Error details: #{options}"
     fx_teams(msgtype: "text",
               content: text,
               webhook: WECOM_IOS_GROUP)
