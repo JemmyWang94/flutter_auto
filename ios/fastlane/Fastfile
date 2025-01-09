@@ -338,7 +338,7 @@ platform :ios do
 
     url  = webhook
     fx_teams(msgtype: "text",
-              content: content,
+              content: content.force_encoding('UTF-8'),
               webhook: url)
   end
 
@@ -352,7 +352,7 @@ platform :ios do
     webhook  = options[:webhook]
     call_all = options[:call_all]
 
-    text = "--------- lane execute done ---------\n#{content}"
+    text = "--------- lane execute done ---------\n#{content.force_encoding('UTF-8')}"
     url  = webhook
     fx_teams(msgtype: "text",
               content: text,
